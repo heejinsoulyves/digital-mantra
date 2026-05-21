@@ -42,21 +42,24 @@
             backdrop-filter: blur(10px);
             margin-bottom: 24px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
-        h1 {
-            font-size: 1.2rem;
+        h1, h2 {
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 0.15em;
             color: var(--text-muted);
-            margin-0 0 16px 0;
+            margin: 0 0 16px 0;
         }
 
         .mantra-text {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
             line-height: 1.4;
             color: var(--text-main);
+            outline: none;
+            padding: 4px;
         }
 
         .focus-list {
@@ -65,19 +68,13 @@
             padding: 24px;
             border-radius: 16px;
             text-align: left;
-        }
-
-        h2 {
-            font-size: 1rem;
-            color: var(--text-muted);
-            margin: 0 0 16px 0;
+            margin-bottom: 20px;
         }
 
         .todo-item {
             display: flex;
             align-items: center;
-            margin-bottom: 12px;
-            cursor: pointer;
+            margin-bottom: 16px;
         }
 
         .todo-item:last-child {
@@ -86,15 +83,15 @@
 
         input[type="checkbox"] {
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border: 2px solid var(--border-color);
             border-radius: 6px;
-            margin-right: 12px;
+            margin-right: 14px;
             cursor: pointer;
             position: relative;
             background: transparent;
-            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         input[type="checkbox"]:checked {
@@ -114,13 +111,40 @@
         }
 
         .todo-text {
-            font-size: 1rem;
-            transition: color 0.2s ease, text-decoration 0.2s ease;
+            font-size: 1.05rem;
+            outline: none;
+            width: 100%;
+            padding: 2px 4px;
+            border-radius: 4px;
         }
 
         input[type="checkbox"]:checked + .todo-text {
             color: var(--text-muted);
             text-decoration: line-through;
+        }
+
+        /* Input styling when editing text */
+        [contenteditable="true"] {
+            border-bottom: 1px dashed var(--accent);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            color: var(--text-main);
+            border-color: var(--accent);
+            background: rgba(129, 140, 248, 0.1);
         }
     </style>
 </head>
@@ -129,43 +153,80 @@
     <div class="container">
         <!-- Mantra Section -->
         <div class="mantra-card">
-            <h1>Current Core Mantra</h1>
-            <div class="mantra-text">"Taking opportunities creates new opportunities."</div>
+            <h1>Core Focus</h1>
+            <div class="mantra-text" id="mantraDisplay" contenteditable="false">"Taking opportunities creates new opportunities."</div>
         </div>
 
         <!-- Daily Focus Checklist -->
         <div class="focus-list">
             <h2>Today's Intentions</h2>
-            <label class="todo-item">
-                <input type="checkbox" id="task1">
-                <span class="todo-text">Protect high-focus deep work intervals</span>
-            </label>
-            <label class="todo-item">
-                <input type="checkbox" id="task2">
-                <span class="todo-text">Review portfolio allocations</span>
-            </label>
-            <label class="todo-item">
-                <input type="checkbox" id="task3">
-                <span class="todo-text">Complete evening conditioning/cardio</span>
-            </label>
+            <div class="todo-item">
+                <input type="checkbox" id="check1">
+                <div class="todo-text" id="task1" contenteditable="false">Protect high-focus deep work intervals</div>
+            </div>
+            <div class="todo-item">
+                <input type="checkbox" id="check2">
+                <div class="todo-text" id="task2" contenteditable="false">Review portfolio allocations</div>
+            </div>
+            <div class="todo-item">
+                <input type="checkbox" id="check3">
+                <div class="todo-text" id="task3" contenteditable="false">Complete evening conditioning/cardio</div>
+            </div>
         </div>
+
+        <!-- Edit/Save Control -->
+        <button class="action-btn" id="editBtn">Edit Dashboard</button>
     </div>
 
     <script>
-        // Simple persistence script to save checkbox state
+        const editBtn = document.getElementById('editBtn');
+        const editableElements = [
+            document.getElementById('mantraDisplay'),
+            document.getElementById('task1'),
+            document.getElementById('task2'),
+            document.getElementById('task3')
+        ];
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        
-        // Load saved states
+
+        // Load saved text and checkbox data from local browser storage
+        window.addEventListener('DOMContentLoaded', () => {
+            editableElements.forEach(el => {
+                const savedText = localStorage.getItem(el.id);
+                if (savedText) el.innerText = savedText;
+            });
+
+            checkboxes.forEach(box => {
+                const savedCheck = localStorage.getItem(box.id);
+                if (savedCheck === 'true') box.checked = true;
+            });
+        });
+
+        // Track and save checkbox states automatically
         checkboxes.forEach(box => {
-            const savedState = localStorage.getItem(box.id);
-            if (savedState === 'true') {
-                box.checked = true;
-            }
-            
-            // Listen for changes
             box.addEventListener('change', (e) => {
                 localStorage.setItem(box.id, e.target.checked);
             });
+        });
+
+        // Toggle Edit Mode
+        let isEditing = false;
+        editBtn.addEventListener('click', () => {
+            isEditing = !isEditing;
+            
+            if (isEditing) {
+                // Enter edit mode
+                editableElements.forEach(el => el.setAttribute('contenteditable', 'true'));
+                editBtn.innerText = 'Save Dashboard';
+                editBtn.style.borderColor = 'var(--accent)';
+            } else {
+                // Exit and save mode
+                editableElements.forEach(el => {
+                    el.setAttribute('contenteditable', 'false');
+                    localStorage.setItem(el.id, el.innerText); // Lock to local memory
+                });
+                editBtn.innerText = 'Edit Dashboard';
+                editBtn.style.borderColor = 'var(--border-color)';
+            }
         });
     </script>
 </body>
